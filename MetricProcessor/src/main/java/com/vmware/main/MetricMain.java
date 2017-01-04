@@ -34,26 +34,17 @@ public class MetricMain implements CommandLineRunner {
 	private MetricRepository repository;
 	
     @RequestMapping("/")
-    String home() {
-        return "Hello My World!";
+    public final String home() {
+        return "index";
     }
 
     //from application.properties and default value
-  	@Value("${application.hello:Hello Angel}")
-  	private String hello;
-
-  	@RequestMapping("/helloRestJsp")
-  	public String helloRestJsp(Map<String, Object> map) {
-  		System.out.println("HelloController.helloJsp().hello=" + hello);
-  		map.put("hello", hello);
-  		return "helloJsp";
-  	}
+  	@Value("${application.welcomeStr:Welcome!}")
+  	private String welcomeStr;
   	
   	@RequestMapping(value="helloJsp")
   	public String helloJsp(Map<String, Object> map) {
-  		System.out.println("HelloController.helloJsp().hello=" + hello);
-  		
-  		map.put("hello", hello);
+  		map.put("welcomeStr", welcomeStr);
   		map.put("metricMap", generateMetricMap());
   		
   		return "helloJsp";
@@ -78,8 +69,6 @@ public class MetricMain implements CommandLineRunner {
 		List<String> tagList = new ArrayList<String>();
 		tagList.add("cpu");
 		tagList.add("ui");
-		repository.save(new Metric("V4V", "Session", "cpu", "cpu_usage", tagList));
-		repository.save(new Metric("V4V", "Session", "cpu", "cpu_available", tagList));
 
 		// fetch all customers
 		System.out.println("test get metric():");
@@ -195,7 +184,7 @@ public class MetricMain implements CommandLineRunner {
    		MongoClient mongoClient = new MongoClient("localhost", 27017);
 
    		// Mongo DB Factory
-   		SimpleMongoDbFactory simpleMongoDbFactory = new SimpleMongoDbFactory(mongoClient, "test");
+   		SimpleMongoDbFactory simpleMongoDbFactory = new SimpleMongoDbFactory(mongoClient, "MetricDB");
 
    		return simpleMongoDbFactory;
    	}

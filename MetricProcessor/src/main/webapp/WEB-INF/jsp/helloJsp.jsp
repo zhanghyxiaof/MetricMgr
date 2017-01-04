@@ -9,7 +9,7 @@
 <body>
     hello my Jsp
     <hr>
-    ${hello}
+    ${welcomeStr}
    
 </body>
 </html>
