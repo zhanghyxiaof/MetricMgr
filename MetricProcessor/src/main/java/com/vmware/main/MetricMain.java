@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,80 +25,78 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.mongodb.MongoClient;
 
+/**
+ * This is the main class for the start and logic of metric processor project
+ * @author hy
+ *
+ */
 ////@RestController
 @Controller
-
 @EnableAutoConfiguration
 public class MetricMain implements CommandLineRunner {
 
 	@Autowired
-	private MetricRepository repository;
-	
-    @RequestMapping("/")
-    public final String home() {
-        return "index";
-    }
+	private MetricRepository metricRepo;
+	@Autowired
+	private AdapterRepository adapterRepo;
 
-    //from application.properties and default value
-  	@Value("${application.welcomeStr:Welcome!}")
-  	private String welcomeStr;
-  	
-  	@RequestMapping(value="helloJsp")
-  	public String helloJsp(Map<String, Object> map) {
-  		map.put("welcomeStr", welcomeStr);
-  		map.put("metricMap", generateMetricMap());
-  		
-  		return "helloJsp";
-  	}
-    
-  	@RequestMapping(value="example")
-  	public ModelAndView example(HttpServletRequest request) {
-  		return new ModelAndView("index");
-  	}
-  	
-    public static void main(String[] args) throws Exception {
-        SpringApplication.run(MetricMain.class, args);
-        
-    }
-    
-    
-    public void run(String... args) throws Exception {
+	@RequestMapping("/")
+	public final String home() {
+		return "index";
+	}
+
+	// from application.properties and default value
+	@Value("${application.welcomeStr:Welcome!}")
+	private String welcomeStr;
+
+	@RequestMapping(value = "helloJsp")
+	public String helloJsp(Map<String, Object> map) {
+		map.put("welcomeStr", welcomeStr);
+		map.put("metricMap", generateMetricMap("V4V", "6.4"));
+
+		return "helloJsp";
+	}
+
+	@RequestMapping(value = "example")
+	public ModelAndView example(HttpServletRequest request) {
+		return new ModelAndView("index");
+	}
+
+	public static void main(String[] args) throws Exception {
+		SpringApplication.run(MetricMain.class, args);
+
+	}
+
+	public void run(String... args) throws Exception {
 		System.out.println("start mongo test......");
-		repository.deleteAll();
-
-		// save a couple of customers
-		List<String> tagList = new ArrayList<String>();
-		tagList.add("cpu");
-		tagList.add("ui");
+		metricRepo.deleteAll();
 
 		// fetch all customers
 		System.out.println("test get metric():");
 		System.out.println("-------------------------------");
-		// repository.findMetric("V4V", "Session", "cpu", "cpu_usage")
-		for (Metric metric : repository.findByAdapterKind("V4V")) {
-			System.out.println(metric);
-		}
 		System.out.println();
-		loadDescribeFile("test");
-		List<Metric> metricList = repository.findByResourceKind("ViewPod");
+		loadDescribeFile("V4V", "6.4", "./src/main/resources/describe.xml");
+		List<Metric> metricList = metricRepo.findByResourceKind("ViewPod");
 		System.out.println(metricList.size());
-		System.out.println(repository.findAll().size());
-		for (int i=0; i<10; i++) {
-			Metric metric = repository.findAll().get(i);
+		System.out.println(metricRepo.findAll().size());
+		for (int i = 0; i < 10; i++) {
+			Metric metric = metricList.get(i);
 			System.out.println(metric);
 		}
 
 	}
 
-	private synchronized String loadDescribeFile(String describeFile) {
-		describeFile = "./src/main/resources/describe.xml";
-		StringBuilder config = new StringBuilder();
-		System.out.println(System.getProperty("user.dir"));
-
+	/**
+	 * Read the adapter describe file and save each metric as a structured object in mongo
+	 * @param adapterKind the adapter kind which the describe file belongs to
+	 * @param adapterVersion the version of the adapter
+	 * @param describeFile the describeFile full name
+	 */
+	private synchronized void loadDescribeFile(String adapterKind, String adapterVersion, String describeFile) {
+		//System.out.println(System.getProperty("user.dir"));
 		try (FileInputStream stm = new FileInputStream(describeFile)) {
 			Scanner scanner = new Scanner(new InputStreamReader(stm, "UTF-8"));
 			try {
-				String adapterKind = "";
 				String resourceKind = "";
 				String resourceGroup = "";
 				String metricName = "";
@@ -111,6 +110,9 @@ public class MetricMain implements CommandLineRunner {
 							break;
 						case "<ResourceKind":
 							resourceKind = getKey(lineArr);
+							// reset resource group for new resource kind since some metrics
+							// do not have resource group
+							resourceGroup = "";
 							break;
 						case "<ResourceGroup":
 							resourceGroup = getKey(lineArr);
@@ -119,6 +121,11 @@ public class MetricMain implements CommandLineRunner {
 							System.out.println("insert metric...");
 							metricName = getKey(lineArr);
 							Metric metric = new Metric(adapterKind, resourceKind, resourceGroup, metricName, null);
+							if (!resourceGroup.isEmpty()) {
+								Map<String, Double> tagMap = new HashMap<>();
+								tagMap.put(resourceGroup, 1.0);
+								metric.setTagMap(tagMap);
+							}
 							saveMetricToDB(metric);
 							break;
 						default:
@@ -135,13 +142,21 @@ public class MetricMain implements CommandLineRunner {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		//System.out.println(config.toString().substring(config.toString().length() - 100));
-		return config.toString();
 	}
 
+	/**
+	 * Persist the metric to DB
+	 * @param metric the metric object to be saved
+	 */
 	private void saveMetricToDB(Metric metric) {
-		repository.save(metric);
+		metricRepo.save(metric);
 	}
+
+	/**
+	 * get the key attribute from the array
+	 * @param lineArr the string collections processed by split() method for each line in describe
+	 * @return the key attribute
+	 */
 	private String getKey(String[] lineArr) {
 		for (String element : lineArr) {
 			String[] pair = element.split("=");
@@ -153,11 +168,19 @@ public class MetricMain implements CommandLineRunner {
 		}
 		return "";
 	}
-	private Map<String, List<Metric>> generateMetricMap() {
+
+	/**
+	 * generate the whole metric map based on the specified describe version
+	 * @param adapterKind
+	 * @param adapterVersion
+	 * @return the whole metric map
+	 */
+	private Map<String, List<Metric>> generateMetricMap(String adapterKind, String adapterVersion) {
 		Map<String, List<Metric>> map = new HashMap<>();
-		List<Metric> metricList = repository.findAll();
+		List<Metric> metricList = metricRepo.findByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
 		for (Metric metric : metricList) {
-			for (String tag : metric.tagList) {
+			for (Entry<String, Double> entry : metric.getTagMap().entrySet()) {
+				String tag = entry.getKey();
 				if (map.get(tag) == null) {
 					List<Metric> list = new ArrayList<>();
 					map.put(tag, list);
@@ -167,31 +190,60 @@ public class MetricMain implements CommandLineRunner {
 		}
 		return map;
 	}
-    /**
-   	 * DB connection Factory
-   	 * 
-   	 * @return a ready to use MongoDbFactory
-   	 */
-   	@Bean
-   	public MongoDbFactory mongoDbFactory() throws Exception {
 
-   		// Set credentials
-   		// MongoCredential credential = MongoCredential("admin", "test",
-   		// "admin".toCharArray());
-   		// ServerAddress serverAddress = new ServerAddress("localhost", 27017);
+	/**
+	 * get all stored adapterKinds
+	 * @return a list of adapterKinds
+	 */
+	private List<String> getAllAdapterKinds() {
+		List<Adapter> adapterList = adapterRepo.findAll();
+		List<String> adapterKindList = new ArrayList<>();
+		for (Adapter adapter : adapterList) {
+			adapterKindList.add(adapter.getAdapterKind());
+		}
+		return adapterKindList;
+	}
 
-   		// Mongo Client
-   		MongoClient mongoClient = new MongoClient("localhost", 27017);
+	/**
+	 * get all stored versions for the selected adapterKind
+	 * @param adapterKind
+	 * @return a list of adapter versions
+	 */
+	private List<String> getAllAdapterVersionsByAdapterKind(String adapterKind) {
+		Adapter adapter = adapterRepo.findByAdapterKind(adapterKind);
+		List<String> versionList = new ArrayList<>();
+		if (adapter != null) {
+			versionList = adapter.getVersionList();
+		}
+		return versionList;
+	}
 
-   		// Mongo DB Factory
-   		SimpleMongoDbFactory simpleMongoDbFactory = new SimpleMongoDbFactory(mongoClient, "MetricDB");
+	/**
+	 * DB connection Factory.
+	 * It is a workaround to use Mongo 3.4
+	 * 
+	 * @return a ready to use MongoDbFactory
+	 */
+	@Bean
+	public MongoDbFactory mongoDbFactory() throws Exception {
 
-   		return simpleMongoDbFactory;
-   	}
+		// Set credentials
+		// MongoCredential credential = MongoCredential("admin", "test",
+		// "admin".toCharArray());
+		// ServerAddress serverAddress = new ServerAddress("localhost", 27017);
 
-   	@Bean
-   	public MongoTemplate mongoTemplate() throws Exception {
-   		return new MongoTemplate(mongoDbFactory());
-   	}
+		// Mongo Client
+		MongoClient mongoClient = new MongoClient("localhost", 27017);
+
+		// Mongo DB Factory
+		SimpleMongoDbFactory simpleMongoDbFactory = new SimpleMongoDbFactory(mongoClient, "MetricDB");
+
+		return simpleMongoDbFactory;
+	}
+
+	@Bean
+	public MongoTemplate mongoTemplate() throws Exception {
+		return new MongoTemplate(mongoDbFactory());
+	}
 
 }
