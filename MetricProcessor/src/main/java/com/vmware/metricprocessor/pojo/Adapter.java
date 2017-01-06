@@ -9,6 +9,15 @@ public class Adapter {
 	private String id;
 
 	private String adapterKind;
+	private String adapterDesc;
+	public String getAdapterDesc() {
+		return adapterDesc;
+	}
+
+	public void setAdapterDesc(String adapterDesc) {
+		this.adapterDesc = adapterDesc;
+	}
+
 	private List<String> versionList;
 
 	public List<String> getVersionList() {
@@ -34,5 +43,4 @@ public class Adapter {
 	public void setAdapterKind(String adapterKind) {
 		this.adapterKind = adapterKind;
 	}
-
 }

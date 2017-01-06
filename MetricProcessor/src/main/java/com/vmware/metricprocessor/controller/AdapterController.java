@@ -51,4 +51,26 @@ public class AdapterController {
 		return versionList;
 	}
 
+	public void insertAdapter(Adapter adapter) {
+		adapterRepo.save(adapter);
+	}
+
+	public void removeAdapter(Adapter adapter) {
+		adapterRepo.delete(adapter);
+	}
+
+	/**
+	 * Append a new support version number to the existing adapter
+	 * 
+	 * @param adapterKind
+	 * @param adapterVersion
+	 */
+	public void addNewAdapterVersion(String adapterKind, String adapterVersion) {
+		Adapter adapter = adapterRepo.findByAdapterKind(adapterKind);
+		if (adapter != null && !adapter.getVersionList().contains(adapterVersion)) {
+			adapter.getVersionList().add(adapterVersion);
+			adapterRepo.save(adapter);
+		}
+	}
+
 }
