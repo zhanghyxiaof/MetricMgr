@@ -1,27 +1,24 @@
-package com.vmware.main;
+package com.vmware.metricprocessor.pojo;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.data.annotation.Id;
 
-
 public class Metric {
 
-    @Id
-    private String id;
+	@Id
+	private String id;
 
-    private String adapterVersion;
-    private String adapterKind;
-    private String resourceKind;
-    private String resourceGroup;
-    private String metricName;
-    private Map<String, Double> tagMap = new HashMap<String, Double>();
+	private String adapterVersion;
+	private String adapterKind;
+	private String resourceKind;
+	private String resourceGroup;
+	private String metricName;
+	private Map<String, Double> tagMap = new HashMap<String, Double>();
 
-    public String getId() {
+	public String getId() {
 		return id;
 	}
 
@@ -77,26 +74,27 @@ public class Metric {
 		this.tagMap = tagMap;
 	}
 
-	public Metric() {}
+	public Metric() {
+	}
 
-    public Metric(String adapterKind, String resourceKind, String resourceGroup, String metricName, Map<String, Double> tagMap) {
-        this.adapterKind = adapterKind;
-        this.resourceKind = resourceKind;
-        this.resourceGroup = resourceGroup;
-        this.metricName = metricName;
-        this.tagMap = tagMap;
-    }
+	public Metric(String adapterKind, String adapterVersion, String resourceKind, String resourceGroup,
+			String metricName, Map<String, Double> tagMap) {
+		this.adapterKind = adapterKind;
+		this.adapterVersion = adapterVersion;
+		this.resourceKind = resourceKind;
+		this.resourceGroup = resourceGroup;
+		this.metricName = metricName;
+		this.tagMap = tagMap;
+	}
 
-    @Override
-    public String toString() {
-    	String tagStr="";
-    	for (Entry<String, Double> entry : tagMap.entrySet()) {
-    		tagStr += entry.getKey() + ":" + entry.getValue() + ";";
-    	}
-        return String.format(
-                "Metric[id=%s, adapterKind='%s', resourceKind='%s', metricName='%s', tags='%s']",
-                id, adapterKind, resourceKind, metricName, tagStr);
-    }
+	@Override
+	public String toString() {
+		String tagStr = "";
+		for (Entry<String, Double> entry : tagMap.entrySet()) {
+			tagStr += entry.getKey() + ":" + entry.getValue() + ";";
+		}
+		return String.format("Metric[id=%s, adapterKind='%s', resourceKind='%s', metricName='%s', tags='%s']", id,
+				adapterKind, resourceKind, metricName, tagStr);
+	}
 
 }
-
