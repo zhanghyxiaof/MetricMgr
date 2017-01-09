@@ -48,6 +48,21 @@ public class MetricController {
 
 		return "helloJsp";
 	}
+	
+	@RequestMapping(value = "list")
+	public String getMetricMap(Map<String, Object> map) {
+		map.put("welcomeStr", welcomeStr);
+		map.put("metricMap", generateMetricMap("V4V", "6.4"));
+		return "list";
+	}
+	
+	@RequestMapping(value = "download")
+	public String processDownload(Map<String, Object> map) {
+		System.out.println("download is called!");
+		map.put("welcomeStr", welcomeStr);
+		map.put("metricMap", generateMetricMap("V4V", "6.4"));
+		return "download";
+	}
 
 	@RequestMapping(value = "example")
 	public ModelAndView example(HttpServletRequest request) {
