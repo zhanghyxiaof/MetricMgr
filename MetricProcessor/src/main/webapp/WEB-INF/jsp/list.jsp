@@ -12,17 +12,57 @@
 		map.size();
 	%>
 	<p><%=map.size()%></p>
-	<form id="form1" name="form1" method="post" action="download">
-		<select name="mylist" size="5"></select>
+	<form id="form1" name="form1" method="post" action="generateDescribe">
 		<% int order = 0;
 		for (Entry<String, List<Metric>> entry : map.entrySet()) {%>
-		</label> <label> <input type="checkbox" name="checkbox2"value="checkbox" /><%=entry.getKey() %></label>
-			<%if (order%5 == 0) {%>
-				<br />
-			<%} order++;%>
-		<%} %>
-		<br />
+			<% if (order%5==0){ %>
+			<div>
+			<%} %>
+				<div style="float:left; width:20%;"> 
+					<input type="checkbox" name="checkbox" value="<%= entry.getKey() %>"/>
+					<span id="label<%= order %>" onclick="display_hide_details(<%= order %>)"><%= entry.getKey() %></span>
+					<ul id="partlist<%= order %>" style="display:none">
+					  <% int i = 0;
+					  for (i=0; i<entry.getValue().size()&&i<10;i++){%>
+						  <li><%= entry.getValue().get(i).getMetricName() %></li>
+					  <% }
+					  if (i<entry.getValue().size()){%>
+						  <span style="color:blue; cursor:pointer" onclick="display_completelist(<%= order %>)"> read more </span>
+					  <%}%>
+					</ul>
+					
+					<ul id="completelist<%= order %>" style="display:none">
+					  <% for (Metric metric:entry.getValue()){%>
+						  <li><%= metric.getMetricName() %></li>
+					  <%}%>
+					</ul>
+					
+				</div>
+			<%if (order%5 == 4 || order>=map.size()-1) {%>
+			<div style='clear: both;'></div>
+			</div>
+			<%} order++;
+		} %>
 		<input name="sub" type="submit" value="generate describe file">
 	</form>
+	
+	<script>
+	function display_hide_details(order)
+	{
+		if (document.getElementById("partlist"+order).style.display != 'none' || document.getElementById("completelist"+order).style.display != 'none'){
+			document.getElementById("partlist"+order).style.display ='none';
+			document.getElementById("completelist"+order).style.display ='none';
+		}
+		else{
+			document.getElementById("partlist"+order).style.display ='block';
+		}
+	}
+	
+	function display_completelist(order)
+	{
+		document.getElementById("partlist"+order).style.display ='none';
+		document.getElementById("completelist"+order).style.display ='block';
+	}
+	</script>
 </body>
 </html>
