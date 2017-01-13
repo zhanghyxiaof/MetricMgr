@@ -65,12 +65,13 @@ public class MetricController {
 	}
 	
 	@RequestMapping(value = "generateDescribe")
-	public String processDownload(HttpServletRequest request) {
+	public String generateDescribe(HttpServletRequest request) {
 		System.out.println("generateDescribe is called!");
 		/*map.put("welcomeStr", welcomeStr);
 		map.put("metricMap", generateMetricMap("V4V", "6.4"));*/
 		String[] checkedTags = request.getParameterValues("checkbox");
-		List<String> checkMetricList = generateCheckMetricList("V4V", "6.4", checkedTags);
+		String userJob = request.getParameter("userJob");
+		List<String> checkMetricList = generateCheckMetricList("V4V", "6.4", checkedTags, userJob);
 		changeDescribeFile("./src/main/resources/describe.xml", "./src/main/resources/new_describe.xml", checkMetricList);
 		/*System.out.println(checkedTags[0]);*/
 		return "download";
@@ -237,7 +238,7 @@ public class MetricController {
 							saveMetricToDB(metric);
 							break;
 						default:
-							System.out.println("skip line...");
+//							System.out.println("skip line...");
 						}
 					}
 				}
@@ -326,17 +327,41 @@ public class MetricController {
 		return map;
 	}
 	
-	public List<String> generateCheckMetricList(String adapterKind, String adapterVersion, String[] checkedTags) {
+	public void updateTagWeights(Metric metric, String tag){
+		metric.getTagMap().put(tag, metric.getTagMap().get(tag)+1);
+		saveMetricToDB(metric);
+	}
+	
+	public void uodateJobWeights(Metric metric, String userJob){
+		if (metric.getTagMap().containsKey(userJob)){
+			metric.getTagMap().put(userJob, metric.getTagMap().get(userJob)+1);
+			saveMetricToDB(metric);
+		}
+	}
+	
+	public List<String> generateCheckMetricList(String adapterKind, String adapterVersion, String[] checkedTags, String userJob) {
 		List<Metric> metricList = metricRepo.findByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
 		List<String> checkMetricList = new ArrayList<>();
 		for (Metric metric : metricList){
 			for (Entry<String, Double> entry : metric.getTagMap().entrySet()){
 				String tag = entry.getKey();
 				if (Arrays.asList(checkedTags).contains(tag)){
-					checkMetricList.add(metric.getMetricName());
+					if (!checkMetricList.contains(metric.getMetricName())){
+						checkMetricList.add(metric.getMetricName());
+					}			
+					updateTagWeights(metric, tag);
 				}
 			}
+			uodateJobWeights(metric, userJob);
 		}
+		
+//		metricList = metricRepo.findByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
+//		for (Metric metric : metricList){
+//			if (metric.getMetricName().equals("fec_rate")){
+//				System.out.println(metric.getTagMap().get("remotefx_network"));
+//			}
+//		}
+		
 		return checkMetricList;
 	}
 }
