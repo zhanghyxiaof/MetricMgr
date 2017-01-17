@@ -1,12 +1,17 @@
 package com.vmware.metricprocessor.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.vmware.metricprocessor.pojo.Adapter;
+import com.vmware.metricprocessor.pojo.Metric;
 import com.vmware.metricprocessor.repository.AdapterRepository;
 
 /**
@@ -21,6 +26,15 @@ public class AdapterController {
 
 	@Autowired
 	private AdapterRepository adapterRepo;
+	
+	public List<Adapter> generateAdapterList() {
+		List<Adapter> adapterList = adapterRepo.findAll();
+		return adapterList;
+	}
+	
+	public void deleteAllAdapters() {
+		adapterRepo.deleteAll();
+	}
 
 	/**
 	 * get all stored adapterKinds
@@ -69,8 +83,43 @@ public class AdapterController {
 		Adapter adapter = adapterRepo.findByAdapterKind(adapterKind);
 		if (adapter != null && !adapter.getVersionList().contains(adapterVersion)) {
 			adapter.getVersionList().add(adapterVersion);
-			adapterRepo.save(adapter);
+			insertAdapter(adapter);
 		}
+	}
+	
+	public void addNewAdapterKind(String adapterKind){
+		List<String> adapterKindList = getAllAdapterKinds();
+		if (adapterKindList.contains(adapterKind)){
+			return;
+		}
+		Adapter adapter = new Adapter();
+		adapter.setAdapterKind(adapterKind);
+		List<String> versionList = new ArrayList<>();
+		adapter.setVersionList(versionList);
+		insertAdapter(adapter);
+	}
+	
+	public void addTestAdapterData(){
+		addNewAdapterKind("V4V");
+		addNewAdapterVersion("V4V","6.1");
+		addNewAdapterVersion("V4V","6.2");
+		addNewAdapterVersion("V4V","6.3");
+		addNewAdapterVersion("V4V","6.4");
+		
+		addNewAdapterKind("V4PA");
+		addNewAdapterVersion("V4PA","6.1");
+		
+		addNewAdapterKind("V4PA7X");
+		addNewAdapterVersion("V4PA7X","6.2");
+		addNewAdapterVersion("V4PA7X","6.3");
+		addNewAdapterVersion("V4PA7X","6.4");
+		
+		addNewAdapterKind("VMWARE");
+		addNewAdapterVersion("VMWARE","6.0");
+		addNewAdapterVersion("VMWARE","6.1");
+		addNewAdapterVersion("VMWARE","6.2");
+		addNewAdapterVersion("VMWARE","6.3");
+		addNewAdapterVersion("VMWARE","6.4");
 	}
 
 }

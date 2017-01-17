@@ -7,18 +7,65 @@
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 	<title>Administrator Page</title>
 </head>
-<body>
+<body onload="initial_page()">
+	<%
+	List<Adapter> adapterList = (List<Adapter>) request.getAttribute("adapterList");
+	%>
 	<!-- 用于文件上传的表单元素 --> 
 	<form style="margin-left:30%; margin-top:50px;" name="demoForm" id="demoForm" method="post" enctype="multipart/form-data" 
 	action="javascript: uploadAndSubmit();"> 
-	<p>Upload File: <input style="margin-top:10px;" type="file" name="file" /></p> 
-	<div style="margin-top:20px;">
-		Progessing: <span id="bytesRead"> 0 </span>bytes / <span id="bytesTotal">0 </span>bytes
-	</div> 
-	<p><input style="margin-top:20px;" class="btn btn-default" type="submit" value="upload" /></p> 
+		<div style="margin-left: 0%; margin-top:100px; width:100%">
+			please select the Adapter Kind: 
+			<select id="adapterKind" name="adapterKind" style="margin-left: 10px; width: 20%" onchange="display_version_list(this.value)">
+			<%for (Adapter adapter : adapterList){%>
+				<option value=<%=adapter.getAdapterKind()%>> <%=adapter.getAdapterKind()%> </option>
+			<%}%>			
+			</select>
+		</div>		
+		
+		<div style="margin-left: 0%; margin-top:30px; width:100%">
+			please select the Adapter Version:
+			<%for (Adapter adapter : adapterList){%>
+				<select id=<%=adapter.getAdapterKind()%> name="adapterVersion" style="margin-left: 10px; width: 20%; display:none">
+				<%for (String version : adapter.getVersionList()) {%>
+					<option value=<%=version%>> <%=version%> </option>
+				<%} %>
+				</select>
+			<%}%>
+		</div>		
+	
+		<p style="margin-top:30px;">Upload File:
+			<div>
+				<label class="btn btn-default" id="uploadHint" style="margin-top:10px;" for="uploadInput"> Upload File </label>
+				<input style="opacity: 0; position: absolute; z-index: -1;" type="file" name="file" id="uploadInput" 
+				onchange="document.getElementById('uploadHint').innerHTML = this.value;"/>
+			</div>		
+		</p>
+		
+		<div style="margin-top:20px;">
+			Progessing: <span id="bytesRead"> 0 </span>bytes / <span id="bytesTotal">0 </span>bytes
+		</div> 
+		
+		<p><input style="margin-top:20px;" class="btn btn-default" type="submit" value="upload" /></p> 
+		
 	</form> 
 	 
 	<script>
+	function initial_page()
+	{
+		document.getElementById(document.getElementById("adapterKind").value).style.display ='inline';
+	}
+	
+	function display_version_list(val)
+	{
+		var all_version_selects = document.getElementsByName("adapterVersion");
+		for (var i=0; i<all_version_selects.length; i++){
+			console.log(all_version_selects[i]);
+			all_version_selects[i].style.display ='none';
+		}
+		document.getElementById(val).style.display ='inline';
+	}
+	
 	function uploadAndSubmit() { 
 		var form = document.forms["demoForm"]; 
 		    
@@ -67,6 +114,8 @@
 					var xhr = new XMLHttpRequest(); 
 					xhr.open(/* method */ "POST", 
 					/* target url */ "uploadDescribe?fileName=" + file.name 
+							+"&adapterKind=" +  document.getElementById("adapterKind").value
+							+"&adapterVersion=" +  document.getElementById(document.getElementById("adapterKind").value).value
 					/*, async, default to true */); 
 					xhr.overrideMimeType("application/octet-stream"); 
 					xhr.sendAsBinary(reader.result); 

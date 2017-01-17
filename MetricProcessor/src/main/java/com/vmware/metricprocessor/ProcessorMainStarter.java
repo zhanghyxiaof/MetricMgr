@@ -1,5 +1,7 @@
 package com.vmware.metricprocessor;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -10,6 +12,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 
 import com.mongodb.MongoClient;
+import com.vmware.metricprocessor.controller.AdapterController;
 import com.vmware.metricprocessor.controller.MetricController;
 
 /**
@@ -24,6 +27,8 @@ public class ProcessorMainStarter implements CommandLineRunner {
 	
 	@Autowired
 	private MetricController metricController;
+	@Autowired
+	private AdapterController adapterController;
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(ProcessorMainStarter.class, args);
@@ -36,7 +41,13 @@ public class ProcessorMainStarter implements CommandLineRunner {
 		System.out.println("test get metric():");
 		System.out.println("-------------------------------");
 		System.out.println();
+		
 		metricController.loadDescribeFile("V4V", "6.4", "./src/main/resources/describe.xml");
+		
+		System.out.println("start to add adapters");
+		adapterController.deleteAllAdapters();
+		adapterController.addTestAdapterData();
+		System.out.println("add adapters successfully");
 	}
 
 	/**

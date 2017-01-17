@@ -8,8 +8,8 @@
 	<title>download page</title>
 </head>
 <body>
-	<p>process successfully</p>
-	<form id="form1" name="form1" method="post" action="downloadDescribe">
+	<h2 style="margin-left: 38%; margin-top:200px">process successfully</h2>
+	<form style="margin-left: 41%; margin-top:50px" id="form1" name="form1" method="post" action="downloadDescribe">
 		<input class="btn btn-default" name="download" type="submit" value="download describe file">
 	</form>
 </body>

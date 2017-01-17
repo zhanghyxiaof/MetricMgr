@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.vmware.metricprocessor.pojo.Adapter;
 import com.vmware.metricprocessor.pojo.Metric;
 import com.vmware.metricprocessor.repository.MetricRepository;
 
@@ -39,6 +41,11 @@ public class MetricController {
 
 	@Autowired
 	private MetricRepository metricRepo;
+	
+	@Autowired
+	private AdapterController adapterController;
+	
+	private static Map<String, String> propertiesMap = loadProperties("./src/main/resources/resources.properties");
 
 	@RequestMapping("/")
 	public final String home() {
@@ -60,8 +67,21 @@ public class MetricController {
 	@RequestMapping(value = "list")
 	public String getMetricMap(Map<String, Object> map) {
 		map.put("welcomeStr", welcomeStr);
-		map.put("metricMap", generateMetricMap("V4V", "6.4"));
+		map.put("adapterList", adapterController.generateAdapterList());
+		map.put("metricMap", generateAllMetricMap(adapterController.generateAdapterList()));
 		return "list";
+	}
+	
+//	@RequestMapping(value = "test")
+//	public void test(Map<String, Object> map) {
+//		map.put("test", welcomeStr);
+//		return;
+//	}
+	
+	@RequestMapping(value = "admin")
+	public String uploadDiscribeFile(Map<String, Object> map) {
+		map.put("adapterList", adapterController.generateAdapterList());
+		return "admin";
 	}
 	
 	@RequestMapping(value = "generateDescribe")
@@ -71,8 +91,11 @@ public class MetricController {
 		map.put("metricMap", generateMetricMap("V4V", "6.4"));*/
 		String[] checkedTags = request.getParameterValues("checkbox");
 		String userJob = request.getParameter("userJob");
-		List<String> checkMetricList = generateCheckMetricList("V4V", "6.4", checkedTags, userJob);
-		changeDescribeFile("./src/main/resources/describe.xml", "./src/main/resources/new_describe.xml", checkMetricList);
+		String adapterKind = request.getParameter("adapterKind");
+		String adapterVersion = request.getParameter("adapterVersion");
+		List<String> checkMetricList = generateCheckMetricList(adapterKind, adapterVersion, checkedTags, userJob);
+		
+		generateNewDescribeFile("./src/main/resources/describe.xml", "./src/main/resources/new_describe.xml", checkMetricList, propertiesMap);
 		/*System.out.println(checkedTags[0]);*/
 		return "download";
 	}
@@ -102,22 +125,26 @@ public class MetricController {
         outputStream.close();
 	}
 	
-	@RequestMapping(value = "admin")
-	public String uploadDiscribeFile(Map<String, Object> map) {
-		return "admin";
-	}
-	
 	@RequestMapping(value = "uploadDescribe")
 	public void processUpload(HttpServletRequest request) throws IOException {
 		BufferedInputStream fileIn = new BufferedInputStream(request.getInputStream()); 
-		String fn = request.getParameter("fileName"); 				     
+		String fn = request.getParameter("fileName");
+		String adapterKind = request.getParameter("adapterKind");
+		String adapterVersion = request.getParameter("adapterVersion");
+		String describeFilePath = "src/main/resources/" + adapterKind + "/" + adapterVersion + "/" + fn;
 		byte[] buf = new byte[1024];
+
+		File path = new File("src/main/resources/" + adapterKind + "/" + adapterVersion); 
+        if(!path.exists()) {  
+        	path.mkdirs();
+        }
 		
-		File file = new File("src/main/resources/" + fn); 		   
+		File file = new File(describeFilePath); 
+		
 		BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file)); 		   
 		while (true) { 
 			int bytesIn = fileIn.read(buf, 0, 1024);       
-		    System.out.println(bytesIn); 
+//		    System.out.println(bytesIn); 
 		    if (bytesIn == -1) { 
 		        break; 
 		    } 
@@ -127,6 +154,9 @@ public class MetricController {
 		} 		   
 		fileOut.flush(); 
 		fileOut.close(); 
+		System.out.println("upload file successfully!");
+		
+		loadDescribeFile(adapterKind, adapterVersion, describeFilePath);
 	}
 
 	@RequestMapping(value = "example")
@@ -146,7 +176,7 @@ public class MetricController {
 	 *            the describeFile full name
 	 */
 	
-	public synchronized void changeDescribeFile(String originalDescribeFile, String changedDescribeFile, List<String> checkMetricList) {
+	public synchronized void generateNewDescribeFile(String originalDescribeFile, String newDescribeFile, List<String> checkMetricList, Map<String, String> propertiesMap) {
 		try (FileInputStream istm = new FileInputStream(originalDescribeFile)) {
 			Scanner scanner = new Scanner(new InputStreamReader(istm, "UTF-8"));
 			try {
@@ -154,7 +184,7 @@ public class MetricController {
 				String resourceGroup = "";
 				String metricName = "";
 				
-				File outfile = new File(changedDescribeFile);
+				File outfile = new File(newDescribeFile);
 				FileOutputStream ostm = new FileOutputStream(outfile);
 				if (!outfile.exists()) {
 					outfile.createNewFile();
@@ -166,7 +196,7 @@ public class MetricController {
 					if (lineArr.length > 0) {
 						switch (lineArr[0]) {
 						case "<ResourceAttribute":
-							metricName = getKey(lineArr);
+							metricName = propertiesMap.get(getNameKey(lineArr));
 							if (checkMetricList.contains(metricName)){
 								lineArr = changeDefaultMonitored(lineArr, true);
 							}
@@ -200,6 +230,42 @@ public class MetricController {
 		}
 	}
 	
+	public static boolean isInteger(String str) {    
+		Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");    
+		return pattern.matcher(str).matches();    
+	}  
+	
+	public synchronized static Map<String, String> loadProperties(String propertiesFile){
+		Map<String, String> propertiesMap = new HashMap<>();
+		try (FileInputStream istm = new FileInputStream(propertiesFile)) {
+			Scanner scanner = new Scanner(new InputStreamReader(istm, "UTF-8"));
+			try {
+				String resourceKind = "";
+				String resourceGroup = "";
+				String metricName = "";
+								
+				while (scanner.hasNextLine()) {
+					String line = scanner.nextLine();
+					String[] lineArr = line.trim().split("=");
+					if (lineArr.length > 1) {
+						if (isInteger(lineArr[0])) {
+							propertiesMap.put(lineArr[0], lineArr[1]);
+						}
+					}
+				}
+				System.out.println("Properties file is loaded");
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				scanner.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return propertiesMap;
+	}
+	
 	public synchronized void loadDescribeFile(String adapterKind, String adapterVersion, String describeFile) {
 		// System.out.println(System.getProperty("user.dir"));
 		try (FileInputStream stm = new FileInputStream(describeFile)) {
@@ -214,21 +280,21 @@ public class MetricController {
 					if (lineArr.length > 1) {
 						switch (lineArr[0]) {
 						case "<AdapterKind":
-							adapterKind = getKey(lineArr);
+							/*adapterKind = getKey(lineArr);*/
 							break;
 						case "<ResourceKind":
-							resourceKind = getKey(lineArr);
+							resourceKind = propertiesMap.get(getNameKey(lineArr));
 							// reset resource group for new resource kind since
 							// some metrics
 							// do not have resource group
 							resourceGroup = "";
 							break;
 						case "<ResourceGroup":
-							resourceGroup = getKey(lineArr);
+							resourceGroup = propertiesMap.get(getNameKey(lineArr));
 							break;
 						case "<ResourceAttribute":
-							System.out.println("insert metric...");
-							metricName = getKey(lineArr);
+//							System.out.println("insert metric...");
+							metricName = propertiesMap.get(getNameKey(lineArr));
 							Map<String, Double> tagMap = new HashMap<>();
 							Metric metric = new Metric(adapterKind, adapterVersion, resourceKind, resourceGroup,
 									metricName, tagMap);
@@ -279,7 +345,19 @@ public class MetricController {
 		for (String element : lineArr) {
 			String[] pair = element.split("=");
 			if (pair.length > 1) {
-				if (pair[0].equals("key")) {
+				if (pair[0].equalsIgnoreCase("key")) {
+					return pair[1].replace("\"", "");
+				}
+			}
+		}
+		return "";
+	}
+	
+	private String getNameKey(String[] lineArr) {
+		for (String element : lineArr) {
+			String[] pair = element.split("=");
+			if (pair.length > 1) {
+				if (pair[0].equalsIgnoreCase("namekey")) {
 					return pair[1].replace("\"", "");
 				}
 			}
@@ -291,7 +369,7 @@ public class MetricController {
 		for (int i=0; i<lineArr.length; i++) {
 			String[] pair = lineArr[i].split("=");
 			if (pair.length > 1) {
-				if (pair[0].equals("defaultmonitored")) {
+				if (pair[0].equalsIgnoreCase("defaultmonitored")) {
 					if (ismonitored) {
 						lineArr[i] = pair[0] + "=\"true\"";
 					}
@@ -327,12 +405,24 @@ public class MetricController {
 		return map;
 	}
 	
+	public Map<String, Map<String, Map<String, List<Metric>>>> generateAllMetricMap(List<Adapter> adapterList){
+		Map<String, Map<String, Map<String, List<Metric>>>> map = new HashMap<>();
+		for(Adapter adapter : adapterList){
+			Map<String, Map<String, List<Metric>>> tmpMap = new HashMap<>();			
+			for (String version : adapter.getVersionList()){
+				tmpMap.put(version, generateMetricMap(adapter.getAdapterKind(),version));
+			}
+			map.put(adapter.getAdapterKind(), tmpMap);
+		}
+		return map;
+	}
+	
 	public void updateTagWeights(Metric metric, String tag){
 		metric.getTagMap().put(tag, metric.getTagMap().get(tag)+1);
 		saveMetricToDB(metric);
 	}
 	
-	public void uodateJobWeights(Metric metric, String userJob){
+	public void updateJobWeights(Metric metric, String userJob){
 		if (metric.getTagMap().containsKey(userJob)){
 			metric.getTagMap().put(userJob, metric.getTagMap().get(userJob)+1);
 			saveMetricToDB(metric);
@@ -352,13 +442,13 @@ public class MetricController {
 					updateTagWeights(metric, tag);
 				}
 			}
-			uodateJobWeights(metric, userJob);
+			updateJobWeights(metric, userJob);
 		}
 		
 //		metricList = metricRepo.findByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
 //		for (Metric metric : metricList){
-//			if (metric.getMetricName().equals("fec_rate")){
-//				System.out.println(metric.getTagMap().get("remotefx_network"));
+//			if (metric.getMetricName().equals("Number of VMs")){
+//				System.out.println(metric.getTagMap().get("Connections"));
 //			}
 //		}
 		
