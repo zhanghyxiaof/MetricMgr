@@ -42,9 +42,13 @@
 			</div>		
 		</p>
 		
-		<div style="margin-top:20px;">
+<!--  		<div style="margin-top:20px;">
 			Progessing: <span id="bytesRead"> 0 </span>bytes / <span id="bytesTotal">0 </span>bytes
-		</div> 
+		</div>   -->
+		
+		<div id="upload_status" style="margin-top:20px"></div>
+		
+		<div id="current_status" style="margin-top:20px"></div>
 		
 		<p><input style="margin-top:20px;" class="btn btn-default" type="submit" value="upload" /></p> 
 		
@@ -75,7 +79,7 @@
 			// try sending 
 			var reader = new FileReader(); 
 	
-			reader.onloadstart = function() { 
+/*  			reader.onloadstart = function() { 
 			// 这个事件在读取开始时触发
 				console.log("onloadstart"); 
 				document.getElementById("bytesTotal").textContent = file.size; 
@@ -84,7 +88,7 @@
 			// 这个事件在读取进行中定时触发
 				console.log("onprogress"); 
 				document.getElementById("bytesRead").textContent = p.loaded; 
-			} 
+			}   */
 	
 			reader.onload = function() { 
 			   // 这个事件在读取成功结束后触发
@@ -109,7 +113,8 @@
 						};
 					}
 					
-					document.getElementById("bytesRead").textContent = file.size; 
+					/* document.getElementById("bytesRead").textContent = file.size; */ 
+					
 					// 构造 XMLHttpRequest 对象，发送文件 Binary 数据
 					var xhr = new XMLHttpRequest(); 
 					xhr.open(/* method */ "POST", 
@@ -122,8 +127,12 @@
 					xhr.onreadystatechange = function() { 
 						if (xhr.readyState == 4) { 
 							if (xhr.status == 200) { 
-								alert("upload complete"); 
-			 				} 
+								document.getElementById("upload_status").innerText = "upload success";
+								document.getElementById("current_status").innerText = xhr.getResponseHeader("current_status");
+			 				}
+							else{
+								document.getElementById("upload_status").innerText = "upload failed";
+							}
 			 			} 
 			 		} 
 			 	} 

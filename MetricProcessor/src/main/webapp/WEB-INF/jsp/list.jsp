@@ -14,22 +14,8 @@
 	%>
 	
 	<form id="form1" name="form1" method="post" action="generateDescribe" style="margin-left:20%; width:60%;">
-		<div style="float:left; margin-left: 0%; margin-top:30px; width:100%">
-			please select your job: 
-			<select name="userJob" style="margin-left: 10px; width: 20%">
-				<option value=""> </option>
-				<option value="education"> Education </option>
-				<option value="software"> Software </option>
-				<option value="accounting"> Accounting </option>
-				<option value="finance"> Finance </option>
-				<option value="machinery"> Machinery </option>
-				<option value="government "> Government  </option>
-				<option value="other"> Other </option>
-			</select>
-		</div>
-		<div style="clear: both; height:20px "></div>
 		
-		<div style="margin-left: 0%; margin-top:10px; width:100%">
+		<div style="margin-left: 0%; margin-top:30px; width:100%">
 			please select the Adapter Kind: 
 			<select id="adapterKind" name="adapterKind" style="margin-left: 10px; width: 20%" onchange="display_version_list(this.value)">
 			<%for (Adapter adapter : adapterList){%>
@@ -49,6 +35,20 @@
 			<%}%>
 		</div>	
 		
+		<div style="float:left; margin-left: 0%; margin-top:30px; width:100%">
+			please select your job: 
+			<select name="userJob" style="margin-left: 10px; width: 20%">
+				<option value=""> </option>
+				<option value="education"> Education </option>
+				<option value="software"> Software </option>
+				<option value="accounting"> Accounting </option>
+				<option value="finance"> Finance </option>
+				<option value="machinery"> Machinery </option>
+				<option value="government "> Government  </option>
+				<option value="other"> Other </option>
+			</select>
+		</div>
+		<div style="clear: both; height:20px "></div>
 		
 		<% int numberPerRow = 3;
 		int numberInPartList = 10;
@@ -132,8 +132,7 @@
 	
 	function initial_page()
 	{
-		document.getElementById(document.getElementById("adapterKind").value).style.display ='inline';
-		display_tags(document.getElementById("adapterKind").value, document.getElementById(document.getElementById("adapterKind").value).value);
+		display_version_list(document.getElementById("adapterKind").value);
 	}
 	
 	function display_tags(adapterKind, adapterVersion){

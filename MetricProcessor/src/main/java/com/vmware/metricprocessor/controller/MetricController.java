@@ -83,7 +83,7 @@ public class MetricController {
 	}
 	
 	@RequestMapping(value = "generateDescribe")
-	public String generateDescribe(HttpServletRequest request) {
+	public String generateDescribe(HttpServletRequest request, Map<String, String> map) {
 		System.out.println("generateDescribe is called!");
 		/*map.put("welcomeStr", welcomeStr);
 		map.put("metricMap", generateMetricMap("V4V", "6.4"));*/
@@ -96,20 +96,25 @@ public class MetricController {
 		String propertiesFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/resources.properties";
 		String describeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/describe.xml";
 		String newDescribeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/new_describe.xml";
-		
+
 		Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
 		generateNewDescribeFile(describeFilePath, newDescribeFilePath, checkMetricList, propertiesMap);
 		/*System.out.println(checkedTags[0]);*/
+		map.put("adapterKind", adapterKind);
+		map.put("adapterVersion", adapterVersion);
 		return "download";
 	}
 	
 	@RequestMapping(value = "downloadDescribe")
-	public void downloadDiscribeFile(HttpServletResponse response) throws IOException {
+	public void downloadDiscribeFile(HttpServletRequest request,HttpServletResponse response) throws IOException {		
+		String adapterKind = request.getParameter("adapterKind");
+		String adapterVersion = request.getParameter("adapterVersion");
+		String FilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/new_describe.xml";
 		OutputStream outputStream = response.getOutputStream();
         //输出文件用的字节数组，每次向输出流发送1024个字节
         byte b[] = new byte[1024];
         //要下载的文件
-        File fileload = new File("./src/main/resources/describe.xml");        
+        File fileload = new File(FilePath);        
         //客服端使用保存文件的对话框
         response.setHeader("Content-disposition", "attachment;filename=describe.xml;");
         //通知客服文件的MIME类型
@@ -129,7 +134,7 @@ public class MetricController {
 	}
 	
 	@RequestMapping(value = "uploadDescribe")
-	public void uploadDescribeFile(HttpServletRequest request) throws IOException {
+	public void uploadDescribeFile(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		BufferedInputStream fileIn = new BufferedInputStream(request.getInputStream()); 
 		String fn = request.getParameter("fileName");
 		String adapterKind = request.getParameter("adapterKind");
@@ -159,7 +164,9 @@ public class MetricController {
 		fileOut.close(); 
 		System.out.println("upload file successfully!");
 		
-		loadPropertiesAndDescribe(adapterKind,adapterVersion);
+		String current_status = loadPropertiesAndDescribe(adapterKind,adapterVersion);
+		response.addHeader("current_status", current_status);
+		response.setStatus(HttpServletResponse.SC_OK);
 	}
 
 	@RequestMapping(value = "example")
@@ -238,17 +245,23 @@ public class MetricController {
 		return pattern.matcher(str).matches();    
 	}  
 	
-	public void loadPropertiesAndDescribe(String adapterKind, String adapterVersion){
+	public String loadPropertiesAndDescribe(String adapterKind, String adapterVersion){
 		String propertiesFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/resources.properties";
 		String describeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/describe.xml";
 		File propertiesFile = new File(propertiesFilePath);
 		File describeFile = new File(describeFilePath);
-		if(!propertiesFile.exists() || !describeFile.exists()){
-			return;
+		if(!propertiesFile.exists()){
+			return "Properties File is required";
 		}
+		if(!describeFile.exists()){
+			return "Describe File is required";
+		}
+		
 		metricRepo.deleteByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
 		Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
 		loadDescribeFile(adapterKind, adapterVersion, describeFilePath, propertiesMap);
+		
+		return "Both files are detected";
 	}
 	
 	public synchronized Map<String, String> loadProperties(String propertiesFilePath){
