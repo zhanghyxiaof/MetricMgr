@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Implementation-Title: MetricProcessor
 Implementation-Version: 0.0.1-SNAPSHOT
-Built-By: pyongchi
+Built-By: admin
 Implementation-Vendor-Id: com.example
 Build-Jdk: 1.8.0_112
 Implementation-URL: http://projects.spring.io/spring-boot/MetricProces

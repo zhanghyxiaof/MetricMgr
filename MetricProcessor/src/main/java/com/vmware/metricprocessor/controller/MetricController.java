@@ -162,9 +162,21 @@ public class MetricController {
 		loadPropertiesAndDescribe(adapterKind,adapterVersion);
 	}
 
-	@RequestMapping(value = "example")
+	@RequestMapping(value = "/index")
 	public ModelAndView example(HttpServletRequest request) {
 		return new ModelAndView("index");
+	}
+	@RequestMapping(value = "/left")
+	public ModelAndView getLeft(HttpServletRequest request) {
+		return new ModelAndView("left");
+	}
+	@RequestMapping(value = "/welcome")
+	public ModelAndView getWelcome(HttpServletRequest request) {
+		return new ModelAndView("welcome");
+	}
+	@RequestMapping(value = "/top")
+	public ModelAndView getTop(HttpServletRequest request) {
+		return new ModelAndView("top");
 	}
 
 	/**
