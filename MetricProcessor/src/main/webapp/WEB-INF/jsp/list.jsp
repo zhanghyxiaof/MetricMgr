@@ -41,7 +41,7 @@
 		<div style="margin-left: 0%; margin-top:30px; width:100%">
 			please select the Adapter Version:
 			<%for (Adapter adapter : adapterList){%>
-				<select id=<%=adapter.getAdapterKind()%> name="adapterVersion" onchange="display_tags(document.getElementById('adapterKind').value, this.value)" style="margin-left: 10px; width: 20%; display:none">
+				<select id=<%=adapter.getAdapterKind()%> class="adapterVersion" name="adapterVersion_disabled" onchange="display_tags(document.getElementById('adapterKind').value, this.value)" style="margin-left: 10px; width: 20%; display:none">
 				<%for (String version : adapter.getVersionList()) {%>
 					<option value=<%=version%>> <%=version%> </option>
 				<%} %>
@@ -72,7 +72,11 @@
 		                return o2.getValue().compareTo(o1.getValue());
 		            }	            
 		        });
+/* 		        for (int i=0; i<sortedList.size(); i++){
+		        	System.out.println(sortedList.get(i));
+		        }	 */
 		        sortedList = sortedList.subList(0, sortedList.size()>=5? 5:sortedList.size());
+        
 				
 				for (Entry<String, List<Metric>> entry : entry2.getValue().entrySet()) {%>
 				
@@ -145,11 +149,13 @@
 	
 	function display_version_list(val)
 	{
-		var all_version_selects = document.getElementsByName("adapterVersion");
+		var all_version_selects = document.getElementsByClassName("adapterVersion");
 		for (var i=0; i<all_version_selects.length; i++){
 			all_version_selects[i].style.display ='none';
+			all_version_selects[i].name = 'adapterVersion_disabled';
 		}
 		document.getElementById(val).style.display ='inline';
+		document.getElementById(val).name = 'adapterVersion';
 		display_tags(val, document.getElementById(val).value);
 	}
 	

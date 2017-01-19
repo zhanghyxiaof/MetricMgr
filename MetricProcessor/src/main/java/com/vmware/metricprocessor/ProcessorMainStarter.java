@@ -42,7 +42,9 @@ public class ProcessorMainStarter implements CommandLineRunner {
 		System.out.println("-------------------------------");
 		System.out.println();
 		
-		metricController.loadDescribeFile("V4V", "6.4", "./src/main/resources/describe.xml");
+//		metricController.loadDescribeFile("V4V", "6.4", "./src/main/resources/describe.xml");
+		metricController.loadPropertiesAndDescribe("V4PA7X", "6.3");
+//		metricController.deleteMetricsByAdapterKindandVersion("V4PA7X", "6.3");
 		
 		System.out.println("start to add adapters");
 		adapterController.deleteAllAdapters();

@@ -17,4 +17,5 @@ public interface MetricRepository extends MongoRepository<Metric, String> {
 	public List<Metric> findByAdapterKindAndAdapterVersion(String adapterKind, String adapterVersion);
 	// public List<Metric> findMetric(String adapterKind, String resourceKind,
 	// String resourceGroup, String metricName);
+	public List<Metric> deleteByAdapterKindAndAdapterVersion(String adapterKind, String adapterVersion);
 }

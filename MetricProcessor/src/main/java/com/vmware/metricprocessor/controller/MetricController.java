@@ -45,8 +45,6 @@ public class MetricController {
 	@Autowired
 	private AdapterController adapterController;
 	
-	private static Map<String, String> propertiesMap = loadProperties("./src/main/resources/resources.properties");
-
 	@RequestMapping("/")
 	public final String home() {
 		return "index";
@@ -79,7 +77,7 @@ public class MetricController {
 //	}
 	
 	@RequestMapping(value = "admin")
-	public String uploadDiscribeFile(Map<String, Object> map) {
+	public String produceAdminPage(Map<String, Object> map) {
 		map.put("adapterList", adapterController.generateAdapterList());
 		return "admin";
 	}
@@ -95,7 +93,12 @@ public class MetricController {
 		String adapterVersion = request.getParameter("adapterVersion");
 		List<String> checkMetricList = generateCheckMetricList(adapterKind, adapterVersion, checkedTags, userJob);
 		
-		generateNewDescribeFile("./src/main/resources/describe.xml", "./src/main/resources/new_describe.xml", checkMetricList, propertiesMap);
+		String propertiesFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/resources.properties";
+		String describeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/describe.xml";
+		String newDescribeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/new_describe.xml";
+		
+		Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
+		generateNewDescribeFile(describeFilePath, newDescribeFilePath, checkMetricList, propertiesMap);
 		/*System.out.println(checkedTags[0]);*/
 		return "download";
 	}
@@ -126,22 +129,22 @@ public class MetricController {
 	}
 	
 	@RequestMapping(value = "uploadDescribe")
-	public void processUpload(HttpServletRequest request) throws IOException {
+	public void uploadDescribeFile(HttpServletRequest request) throws IOException {
 		BufferedInputStream fileIn = new BufferedInputStream(request.getInputStream()); 
 		String fn = request.getParameter("fileName");
 		String adapterKind = request.getParameter("adapterKind");
 		String adapterVersion = request.getParameter("adapterVersion");
-		String describeFilePath = "src/main/resources/" + adapterKind + "/" + adapterVersion + "/" + fn;
+		String FilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/" + fn;
 		byte[] buf = new byte[1024];
 
-		File path = new File("src/main/resources/" + adapterKind + "/" + adapterVersion); 
+		File path = new File("./src/main/resources/" + adapterKind + "/" + adapterVersion); 
         if(!path.exists()) {  
         	path.mkdirs();
         }
 		
-		File file = new File(describeFilePath); 
-		
-		BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file)); 		   
+		File file = new File(FilePath); 
+		System.out.println(FilePath);
+		BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file)); 	
 		while (true) { 
 			int bytesIn = fileIn.read(buf, 0, 1024);       
 //		    System.out.println(bytesIn); 
@@ -156,7 +159,7 @@ public class MetricController {
 		fileOut.close(); 
 		System.out.println("upload file successfully!");
 		
-		loadDescribeFile(adapterKind, adapterVersion, describeFilePath);
+		loadPropertiesAndDescribe(adapterKind,adapterVersion);
 	}
 
 	@RequestMapping(value = "example")
@@ -176,15 +179,15 @@ public class MetricController {
 	 *            the describeFile full name
 	 */
 	
-	public synchronized void generateNewDescribeFile(String originalDescribeFile, String newDescribeFile, List<String> checkMetricList, Map<String, String> propertiesMap) {
-		try (FileInputStream istm = new FileInputStream(originalDescribeFile)) {
+	public synchronized void generateNewDescribeFile(String originalDescribeFilePath, String newDescribeFilePath, List<String> checkMetricList, Map<String, String> propertiesMap) {
+		try (FileInputStream istm = new FileInputStream(originalDescribeFilePath)) {
 			Scanner scanner = new Scanner(new InputStreamReader(istm, "UTF-8"));
 			try {
 				String resourceKind = "";
 				String resourceGroup = "";
 				String metricName = "";
 				
-				File outfile = new File(newDescribeFile);
+				File outfile = new File(newDescribeFilePath);
 				FileOutputStream ostm = new FileOutputStream(outfile);
 				if (!outfile.exists()) {
 					outfile.createNewFile();
@@ -219,7 +222,7 @@ public class MetricController {
 						}
 					}
 				}
-				System.out.println("All metrics are loaded to database...");
+				System.out.println("New describe file is generated...");
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
@@ -235,9 +238,22 @@ public class MetricController {
 		return pattern.matcher(str).matches();    
 	}  
 	
-	public synchronized static Map<String, String> loadProperties(String propertiesFile){
+	public void loadPropertiesAndDescribe(String adapterKind, String adapterVersion){
+		String propertiesFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/resources.properties";
+		String describeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/describe.xml";
+		File propertiesFile = new File(propertiesFilePath);
+		File describeFile = new File(describeFilePath);
+		if(!propertiesFile.exists() || !describeFile.exists()){
+			return;
+		}
+		metricRepo.deleteByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
+		Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
+		loadDescribeFile(adapterKind, adapterVersion, describeFilePath, propertiesMap);
+	}
+	
+	public synchronized Map<String, String> loadProperties(String propertiesFilePath){
 		Map<String, String> propertiesMap = new HashMap<>();
-		try (FileInputStream istm = new FileInputStream(propertiesFile)) {
+		try (FileInputStream istm = new FileInputStream(propertiesFilePath)) {
 			Scanner scanner = new Scanner(new InputStreamReader(istm, "UTF-8"));
 			try {
 				String resourceKind = "";
@@ -266,9 +282,9 @@ public class MetricController {
 		return propertiesMap;
 	}
 	
-	public synchronized void loadDescribeFile(String adapterKind, String adapterVersion, String describeFile) {
+	public synchronized void loadDescribeFile(String adapterKind, String adapterVersion, String describeFilePath, Map<String, String> propertiesMap) {
 		// System.out.println(System.getProperty("user.dir"));
-		try (FileInputStream stm = new FileInputStream(describeFile)) {
+		try (FileInputStream stm = new FileInputStream(describeFilePath)) {
 			Scanner scanner = new Scanner(new InputStreamReader(stm, "UTF-8"));
 			try {
 				String resourceKind = "";
@@ -280,7 +296,7 @@ public class MetricController {
 					if (lineArr.length > 1) {
 						switch (lineArr[0]) {
 						case "<AdapterKind":
-							/*adapterKind = getKey(lineArr);*/
+							adapterKind = getKey(lineArr);
 							break;
 						case "<ResourceKind":
 							resourceKind = propertiesMap.get(getNameKey(lineArr));
@@ -298,7 +314,7 @@ public class MetricController {
 							Map<String, Double> tagMap = new HashMap<>();
 							Metric metric = new Metric(adapterKind, adapterVersion, resourceKind, resourceGroup,
 									metricName, tagMap);
-							if (!resourceGroup.isEmpty()) {
+							if (resourceGroup != null && !resourceGroup.isEmpty()) {
 								tagMap.put(resourceGroup, 1.0);
 							}
 							saveMetricToDB(metric);
@@ -331,6 +347,10 @@ public class MetricController {
 
 	public void deleteAllMetrics() {
 		metricRepo.deleteAll();
+	}
+	
+	public void deleteMetricsByAdapterKindandVersion(String adapterKind, String adapterVersion){
+		metricRepo.deleteByAdapterKindAndAdapterVersion(adapterKind, adapterVersion);
 	}
 
 	/**
