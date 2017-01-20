@@ -97,8 +97,16 @@ public class MetricController {
 		String describeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/describe.xml";
 		String newDescribeFilePath = "./src/main/resources/" + adapterKind + "/" + adapterVersion + "/new_describe.xml";
 
-		Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
-		generateNewDescribeFile(describeFilePath, newDescribeFilePath, checkMetricList, propertiesMap);
+		File propertiesFile = new File(propertiesFilePath);
+		File describeFile = new File(describeFilePath);
+		if(propertiesFile.exists() && describeFile.exists()){
+			map.put("status", "success");
+			Map<String, String> propertiesMap = loadProperties(propertiesFilePath);
+			generateNewDescribeFile(describeFilePath, newDescribeFilePath, checkMetricList, propertiesMap);
+		} else{
+			map.put("status", "failed");
+		}
+
 		/*System.out.println(checkedTags[0]);*/
 		map.put("adapterKind", adapterKind);
 		map.put("adapterVersion", adapterVersion);
@@ -118,7 +126,7 @@ public class MetricController {
         //客服端使用保存文件的对话框
         response.setHeader("Content-disposition", "attachment;filename=describe.xml;");
         //通知客服文件的MIME类型
-        response.setContentType("application/msword");
+        response.setContentType("application/xml");
         //通知客服文件的长度
         long fileLength = fileload.length();
         String length = String.valueOf(fileLength);

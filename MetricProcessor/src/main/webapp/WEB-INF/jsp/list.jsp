@@ -15,40 +15,53 @@
 	
 	<form id="form1" name="form1" method="post" action="generateDescribe" style="margin-left:20%; width:60%;">
 		
-		<div style="margin-left: 0%; margin-top:30px; width:100%">
-			please select the Adapter Kind: 
-			<select id="adapterKind" name="adapterKind" style="margin-left: 10px; width: 20%" onchange="display_version_list(this.value)">
-			<%for (Adapter adapter : adapterList){%>
-				<option value=<%=adapter.getAdapterKind()%>> <%=adapter.getAdapterKind()%> </option>
-			<%}%>			
-			</select>
-		</div>		
-		
-		<div style="margin-left: 0%; margin-top:30px; width:100%">
-			please select the Adapter Version:
-			<%for (Adapter adapter : adapterList){%>
-				<select id=<%=adapter.getAdapterKind()%> class="adapterVersion" name="adapterVersion_disabled" onchange="display_tags(document.getElementById('adapterKind').value, this.value)" style="margin-left: 10px; width: 20%; display:none">
-				<%for (String version : adapter.getVersionList()) {%>
-					<option value=<%=version%>> <%=version%> </option>
-				<%} %>
-				</select>
-			<%}%>
-		</div>	
-		
-		<div style="float:left; margin-left: 0%; margin-top:30px; width:100%">
-			please select your job: 
-			<select name="userJob" style="margin-left: 10px; width: 20%">
-				<option value=""> </option>
-				<option value="education"> Education </option>
-				<option value="software"> Software </option>
-				<option value="accounting"> Accounting </option>
-				<option value="finance"> Finance </option>
-				<option value="machinery"> Machinery </option>
-				<option value="government "> Government  </option>
-				<option value="other"> Other </option>
-			</select>
-		</div>
-		<div style="clear: both; height:20px "></div>
+		<table style="margin-left: 0%; margin-top:30px; width:100%; border-collapse:separate; border-spacing:0px 20px;">
+			<tr>
+				<td width="250">
+					please select the Adapter Kind: 
+				</td>
+				<td>
+					<select id="adapterKind" name="adapterKind" style="width:150px;" onchange="display_version_list(this.value)">
+					<%for (Adapter adapter : adapterList){%>
+						<option value=<%=adapter.getAdapterKind()%>> <%=adapter.getAdapterKind()%> </option>
+					<%}%>			
+					</select>
+				</td>	
+			</tr>	
+			
+			<tr>
+				<td width="250">
+					please select the Adapter Version:
+				</td>
+					<%for (Adapter adapter : adapterList){%>
+						<td>
+							<select id=<%=adapter.getAdapterKind()%> class="adapterVersion" name="adapterVersion_disabled" onchange="display_tags(document.getElementById('adapterKind').value, this.value)" style="width:150px;">
+							<%for (String version : adapter.getVersionList()) {%>
+								<option value=<%=version%>> <%=version%> </option>
+							<%} %>
+							</select>
+						</td>
+					<%}%>			
+			</tr>
+			
+			<tr>
+				<td width="250">
+					please select your job: 
+				</td>
+				<td>
+					<select name="userJob" style="width:150px;">
+						<option value=""> </option>
+						<option value="education"> Education </option>
+						<option value="software"> Software </option>
+						<option value="accounting"> Accounting </option>
+						<option value="finance"> Finance </option>
+						<option value="machinery"> Machinery </option>
+						<option value="government "> Government  </option>
+						<option value="other"> Other </option>
+					</select>
+				</td>	
+		</table>
+		<div style="height:20px "></div>
 		
 		<% int numberPerRow = 3;
 		int numberInPartList = 10;
@@ -125,7 +138,7 @@
 		
 
 		
-		<input class="btn btn-default" style="margin-left: 30%; margin-top: 10px;" name="sub" type="submit" value="generate describe file">
+		<input class="btn btn-default" style="margin-left: 20%; margin-top: 10px;" name="sub" type="submit" value="generate describe file">
 	</form>
 	
 	<script>
@@ -150,10 +163,10 @@
 	{
 		var all_version_selects = document.getElementsByClassName("adapterVersion");
 		for (var i=0; i<all_version_selects.length; i++){
-			all_version_selects[i].style.display ='none';
+			all_version_selects[i].parentNode.style.display ='none';
 			all_version_selects[i].name = 'adapterVersion_disabled';
 		}
-		document.getElementById(val).style.display ='inline';
+		document.getElementById(val).parentNode.style.display ='block';
 		document.getElementById(val).name = 'adapterVersion';
 		display_tags(val, document.getElementById(val).value);
 	}
