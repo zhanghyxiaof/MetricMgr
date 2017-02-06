@@ -1,5 +1,7 @@
 package com.vmware.metricprocessor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
 import com.mongodb.MongoClient;
 import com.vmware.metricprocessor.controller.AdapterController;
 import com.vmware.metricprocessor.controller.MetricController;
+import com.vmware.metricprocessor.pojo.Adapter;
 
 /**
  * This is the main class to start metric processor project
@@ -43,7 +46,12 @@ public class ProcessorMainStarter implements CommandLineRunner {
 		System.out.println();
 		
 //		metricController.loadDescribeFile("V4V", "6.4", "./src/main/resources/describe.xml");
-		metricController.loadPropertiesAndDescribe("V4PA7X", "6.3");
+		for (Adapter adapter : adapterController.generateAdapterList()){
+			for (String adapterVersion : adapter.getVersionList()){
+				metricController.loadPropertiesAndDescribe(adapter.getAdapterKind(), adapterVersion);
+			}
+		}
+//		metricController.loadPropertiesAndDescribe("V4PA7X", "6.3");
 //		metricController.deleteMetricsByAdapterKindandVersion("V4PA7X", "6.3");
 		
 		System.out.println("start to add adapters");
